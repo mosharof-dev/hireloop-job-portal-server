@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -43,6 +43,16 @@ const run = async () => {
       const result = await cursor.toArray();
       console.log(result);
       res.send(result);
+    });
+
+    //  jobs related api ========================================
+
+    // get details of a single job by jobId
+    app.get("/api/jobs/:id", async (req, res) => {
+      const id = req.params.id; 
+      const query = { _id: new ObjectId(id) };
+      const job = await jobCollection.findOne(query);
+      res.send(job);
     });
 
     // Get jobs by companyId and status and all job data
