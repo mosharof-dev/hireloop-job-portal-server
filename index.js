@@ -30,8 +30,22 @@ const run = async () => {
     const database = client.db("hireloop-job-portal");
     const jobCollection = database.collection("jobs");
     const companyCollection = database.collection("companies");
+    const usersCollection = database.collection("user");
 
-    // Get jobs by companyId and status
+    // User Related API
+
+    app.get("/api/users", async (req, res) => {
+      const query = {};
+      if (req.query.email) {
+        query.email = req.query.email;
+      }
+      const cursor = usersCollection.find(query);
+      const result = await cursor.toArray();
+      console.log(result);
+      res.send(result);
+    });
+
+    // Get jobs by companyId and status and all job data
     app.get("/api/jobs", async (req, res) => {
       const query = {};
       if (req.query.companyId) {
@@ -58,6 +72,18 @@ const run = async () => {
 
     // company related api ========================================
 
+    // get all company
+    app.get("/api/companies", async (req, res) => {
+      const query = {};
+      if (req.query.recruiterId) {
+        query.recruiterId = req.query.recruiterId;
+      }
+      const cursor = companyCollection.find(query);
+      const result = await cursor.toArray();
+      console.log(result);
+      res.send(result);
+    });
+
     // Get companies by recruiterId
     app.get("/api/my/companies", async (req, res) => {
       const query = {};
@@ -66,6 +92,7 @@ const run = async () => {
       }
       const cursor = companyCollection.find(query);
       const result = await cursor.toArray();
+      console.log(result);
       res.send(result);
     });
     // Add new Company
