@@ -48,15 +48,34 @@ const run = async () => {
     // Add new job
     app.post("/api/jobs", async (req, res) => {
       const job = req.body;
-      const result = await jobCollection.insertOne(job);
+      const newJob = {
+        ...job,
+        createdAt: new Date(),
+      };
+      const result = await jobCollection.insertOne(newJob);
       res.send(result);
     });
 
     // company related api ========================================
 
+    // Get companies by recruiterId
+    app.get("/api/my/companies", async (req, res) => {
+      const query = {};
+      if (req.query.recruiterId) {
+        query.recruiterId = req.query.recruiterId;
+      }
+      const cursor = companyCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    // Add new Company
     app.post("/api/companies", async (req, res) => {
       const company = req.body;
-      const result = await companyCollection.insertOne(company);
+      const newCompany = {
+        ...company,
+        createdAt: new Date(),
+      };
+      const result = await companyCollection.insertOne(newCompany);
       res.send(result);
     });
 
