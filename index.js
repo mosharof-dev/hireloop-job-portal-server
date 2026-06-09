@@ -31,6 +31,7 @@ const run = async () => {
     const jobCollection = database.collection("jobs");
     const companyCollection = database.collection("companies");
     const usersCollection = database.collection("user");
+    const application = database.collection("application");
 
     // User Related API
 
@@ -45,11 +46,31 @@ const run = async () => {
       res.send(result);
     });
 
+    // Application related api==================
+
+    
+    //
+    app.post("/api/application", async (req, res) => {
+      try {
+        const applicationData = req.body;
+        const newApplication = {
+          ...applicationData,
+          createdAt: new Date(),
+        };
+        const result = await application.insertOne(newApplication);
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error inserting application:", error);
+        res.status(500).send({ error: "Internal Server Error" });
+      }
+    });
+
     //  jobs related api ========================================
 
     // get details of a single job by jobId
     app.get("/api/jobs/:id", async (req, res) => {
-      const id = req.params.id; 
+      const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const job = await jobCollection.findOne(query);
       res.send(job);
