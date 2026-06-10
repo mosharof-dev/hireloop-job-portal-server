@@ -31,7 +31,9 @@ const run = async () => {
     const jobCollection = database.collection("jobs");
     const companyCollection = database.collection("companies");
     const usersCollection = database.collection("user");
-    const application = database.collection("application");
+    const applicationCollection = database.collection("application");
+    const plansCollection = database.collection("plans");
+    const subscriptionCollection = database.collection("subscription");
 
     // User Related API
 
@@ -45,10 +47,60 @@ const run = async () => {
       console.log(result);
       res.send(result);
     });
+    // plans
+    app.get("/api/plans", async (req, res) => {
+      const query = {};
+      if (req.query.planId) {
+        query.id = req.query.planId;
+      }
+      const cursor = plansCollection.find(query);
+      const result = await cursor.toArray();
+      console.log(result);
+      res.send(result);
+    });
+
+    // subscription
+    app.post("/api/subscription", async (req, res) => {
+      try {
+        const subscriptionData = req.body;
+        const newSubscription = {
+          ...subscriptionData,
+          createdAt: new Date(),
+        };
+        const result = await subscriptionCollection.insertOne(newSubscription);
+        // Update the user Info
+        const filter = { email: subscriptionData.email };
+        const updateDoc = {
+          $set: {
+            plan: subscriptionData.planId,
+          },
+        };
+        const userUpdateResult = await usersCollection.updateOne(
+          filter,
+          updateDoc,
+        );
+        res.send({ result, userUpdateResult });
+      } catch (error) {
+        console.error("Error inserting subscription:", error);
+        res.status(500).send({ error: "Internal Server Error" });
+      }
+    });
 
     // Application related api==================
 
-    
+    app.get("/api/application", async (req, res) => {
+      const query = {};
+      if (req.query.applicantId) {
+        query.applicantId = req.query.applicantId;
+      }
+      if (req.query.jobId) {
+        query.jobId = req.query.jobId;
+      }
+      const cursor = applicationCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
     //
     app.post("/api/application", async (req, res) => {
       try {
@@ -57,7 +109,7 @@ const run = async () => {
           ...applicationData,
           createdAt: new Date(),
         };
-        const result = await application.insertOne(newApplication);
+        const result = await applicationCollection.insertOne(newApplication);
 
         res.send(result);
       } catch (error) {
