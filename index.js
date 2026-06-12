@@ -101,7 +101,7 @@ const run = async () => {
       res.send(result);
     });
 
-    //
+    // add application
     app.post("/api/application", async (req, res) => {
       try {
         const applicationData = req.body;
@@ -162,9 +162,16 @@ const run = async () => {
         query.recruiterId = req.query.recruiterId;
       }
       const cursor = companyCollection.find(query);
-      const result = await cursor.toArray();
-      console.log(result);
-      res.send(result);
+      const companies = await cursor.toArray();
+      for (const company of companies) {
+        const filter = {
+          companyId: company._id.toString(),
+        };
+        const jobCount = await jobCollection.countDocuments(filter);
+        company.appliedCount = jobCount;
+      }
+      console.log(companies);
+      res.send(companies);
     });
 
     // Get companies by recruiterId
@@ -178,6 +185,7 @@ const run = async () => {
       console.log(result);
       res.send(result);
     });
+
     // Add new Company
     app.post("/api/companies", async (req, res) => {
       const company = req.body;
@@ -186,6 +194,20 @@ const run = async () => {
         createdAt: new Date(),
       };
       const result = await companyCollection.insertOne(newCompany);
+      res.send(result);
+    });
+
+    // update user plan
+    app.patch("/api/companies/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updatedCompany = req.body;
+      const updateDoc = {
+        $set: {
+          status: updatedCompany.status,
+        },
+      };
+      const result = await companyCollection.updateOne(query, updateDoc);
       res.send(result);
     });
 
