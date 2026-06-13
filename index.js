@@ -13,6 +13,11 @@ app.use(express.json());
 
 const uri = process.env.MONGODB_URI;
 
+const logger = (req, res, next) => {
+  console.log("inside logger", req.params);
+  next();
+};
+
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -34,9 +39,75 @@ const run = async () => {
     const applicationCollection = database.collection("application");
     const plansCollection = database.collection("plans");
     const subscriptionCollection = database.collection("subscription");
+    const sessionsCollection = database.collection("session");
 
+    // verify token
+    const verifyToken = async (req, res, next) => {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).send({ message: "unauthorized access" });
+      }
+      const token = authHeader.split(" ")[1];
+      if (!token) {
+        return res.status(401).send({ message: "unauthorized access" });
+      }
+      const query = { token: token };
+      const session = await sessionsCollection.findOne(query);
+      // if (!session) {
+      //   return res.status(401).send({ message: "unauthorized access" });
+      // }
+      const userId = session.userId;
+
+      const userQuery = {
+        _id: userId,
+      };
+      const user = await usersCollection.findOne(userQuery);
+
+      console.log("from verify token user: ", user);
+
+      // if (!user) {
+      //   return res.status(401).send({ message: "unauthorized access" });
+      // }
+      req.user = user;
+
+      next();
+    };
+
+    // verify seeker must be used after verifyToken
+    const verifySeeker = async (req, res, next) => {
+      if (!req.user) {
+        return res.status(401).send({ message: "unauthorized access" });
+      }
+      const user = req.user;
+      if (user.role !== "seeker") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
+    // // verify recruiter must be used after verifyToken
+    const verifyRecruiter = async (req, res, next) => {
+      if (!req.user) {
+        return res.status(401).send({ message: "unauthorized access" });
+      }
+      const user = req.user;
+      if (user.role !== "recruiter") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
+    const verifyAdmin = async (req, res, next) => {
+      if (!req.user) {
+        return res.status(401).send({ message: "unauthorized access" });
+      }
+      const user = req.user;
+      if (user.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
     // User Related API
-
     app.get("/api/users", async (req, res) => {
       const query = {};
       if (req.query.email) {
@@ -88,10 +159,14 @@ const run = async () => {
 
     // Application related api==================
 
-    app.get("/api/application", async (req, res) => {
+    app.get("/api/application", verifyToken, verifySeeker, async (req, res) => {
       const query = {};
       if (req.query.applicantId) {
         query.applicantId = req.query.applicantId;
+      }
+      console.log(req.user, req.query.applicantId);
+      if (req.query.applicantId !== req.user._id.toString()) {
+        return res.status(403).send({ message: "forbidden access" });
       }
       if (req.query.jobId) {
         query.jobId = req.query.jobId;
@@ -156,7 +231,7 @@ const run = async () => {
     // company related api ========================================
 
     // get all company
-    app.get("/api/companies", async (req, res) => {
+    app.get("/api/companies", verifyToken, async (req, res) => {
       const query = {};
       if (req.query.recruiterId) {
         query.recruiterId = req.query.recruiterId;
@@ -170,7 +245,7 @@ const run = async () => {
         const jobCount = await jobCollection.countDocuments(filter);
         company.appliedCount = jobCount;
       }
-      console.log(companies);
+      // console.log(companies);
       res.send(companies);
     });
 
@@ -198,18 +273,24 @@ const run = async () => {
     });
 
     // update user plan
-    app.patch("/api/companies/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const updatedCompany = req.body;
-      const updateDoc = {
-        $set: {
-          status: updatedCompany.status,
-        },
-      };
-      const result = await companyCollection.updateOne(query, updateDoc);
-      res.send(result);
-    });
+    app.patch(
+      "/api/companies/:id",
+      logger,
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const updatedCompany = req.body;
+        const updateDoc = {
+          $set: {
+            status: updatedCompany.status,
+          },
+        };
+        const result = await companyCollection.updateOne(query, updateDoc);
+        res.send(result);
+      },
+    );
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
