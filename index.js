@@ -108,7 +108,7 @@ const run = async () => {
       next();
     };
     // User Related API
-    app.get("/api/users", async (req, res) => {
+    app.get("/api/users", verifyToken, verifyAdmin, async (req, res) => {
       const query = {};
       if (req.query.email) {
         query.email = req.query.email;
@@ -131,7 +131,7 @@ const run = async () => {
     });
 
     // subscription
-    app.post("/api/subscription", async (req, res) => {
+    app.post("/api/subscription", verifyToken, async (req, res) => {
       try {
         const subscriptionData = req.body;
         const newSubscription = {
@@ -177,7 +177,7 @@ const run = async () => {
     });
 
     // add application
-    app.post("/api/application", async (req, res) => {
+    app.post("/api/application", verifyToken, verifySeeker, async (req, res) => {
       try {
         const applicationData = req.body;
         const newApplication = {
@@ -218,7 +218,7 @@ const run = async () => {
     });
 
     // Add new job
-    app.post("/api/jobs", async (req, res) => {
+    app.post("/api/jobs", verifyToken, verifyRecruiter, async (req, res) => {
       const job = req.body;
       const newJob = {
         ...job,
@@ -250,7 +250,7 @@ const run = async () => {
     });
 
     // Get companies by recruiterId
-    app.get("/api/my/companies", async (req, res) => {
+    app.get("/api/my/companies", verifyToken, verifyRecruiter, async (req, res) => {
       const query = {};
       if (req.query.recruiterId) {
         query.recruiterId = req.query.recruiterId;
@@ -262,7 +262,7 @@ const run = async () => {
     });
 
     // Add new Company
-    app.post("/api/companies", async (req, res) => {
+    app.post("/api/companies", verifyToken, verifyRecruiter, async (req, res) => {
       const company = req.body;
       const newCompany = {
         ...company,
