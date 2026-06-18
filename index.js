@@ -212,6 +212,23 @@ const run = async () => {
       if (req.query.status) {
         query.status = req.query.status;
       }
+      if (req.query.search) {
+        const searchRegex = new RegExp(req.query.search, 'i');
+        query.$or = [
+          { jobTitle: searchRegex },
+          { companyName: searchRegex }
+        ];
+      }
+      if (req.query.jobType) {
+        query.jobType = req.query.jobType;
+      }
+      if (req.query.jobCategory) {
+        query.jobCategory = new RegExp(`^${req.query.jobCategory}$`, 'i');
+      }
+      if (req.query.isRemote === 'true') {
+        query.isRemote = true;
+      }
+
       const cursor = jobCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
