@@ -27,6 +27,24 @@ const client = new MongoClient(uri, {
   },
 });
 
+app.post("/api/send-email", (req, res) => {
+  const email = req.query.email || req.body.email;
+  const name = req.query.name || req.body.name;
+  const subject = req.body.subject || "Welcome to HireLoop!";
+  const message = req.body.message || "Thank you for registering!";
+
+  console.log(
+    "Sending email to:",
+    email,
+    "Name:",
+    name,
+    "Subject:",
+    subject,
+    "message:",
+    message,
+  );
+  res.send("email sent");
+});
 const run = async () => {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -177,21 +195,26 @@ const run = async () => {
     });
 
     // add application
-    app.post("/api/application", verifyToken, verifySeeker, async (req, res) => {
-      try {
-        const applicationData = req.body;
-        const newApplication = {
-          ...applicationData,
-          createdAt: new Date(),
-        };
-        const result = await applicationCollection.insertOne(newApplication);
+    app.post(
+      "/api/application",
+      verifyToken,
+      verifySeeker,
+      async (req, res) => {
+        try {
+          const applicationData = req.body;
+          const newApplication = {
+            ...applicationData,
+            createdAt: new Date(),
+          };
+          const result = await applicationCollection.insertOne(newApplication);
 
-        res.send(result);
-      } catch (error) {
-        console.error("Error inserting application:", error);
-        res.status(500).send({ error: "Internal Server Error" });
-      }
-    });
+          res.send(result);
+        } catch (error) {
+          console.error("Error inserting application:", error);
+          res.status(500).send({ error: "Internal Server Error" });
+        }
+      },
+    );
 
     //  jobs related api ========================================
 
@@ -213,19 +236,16 @@ const run = async () => {
         query.status = req.query.status;
       }
       if (req.query.search) {
-        const searchRegex = new RegExp(req.query.search, 'i');
-        query.$or = [
-          { jobTitle: searchRegex },
-          { companyName: searchRegex }
-        ];
+        const searchRegex = new RegExp(req.query.search, "i");
+        query.$or = [{ jobTitle: searchRegex }, { companyName: searchRegex }];
       }
       if (req.query.jobType) {
         query.jobType = req.query.jobType;
       }
       if (req.query.jobCategory) {
-        query.jobCategory = new RegExp(`^${req.query.jobCategory}$`, 'i');
+        query.jobCategory = new RegExp(`^${req.query.jobCategory}$`, "i");
       }
-      if (req.query.isRemote === 'true') {
+      if (req.query.isRemote === "true") {
         query.isRemote = true;
       }
 
@@ -267,27 +287,37 @@ const run = async () => {
     });
 
     // Get companies by recruiterId
-    app.get("/api/my/companies", verifyToken, verifyRecruiter, async (req, res) => {
-      const query = {};
-      if (req.query.recruiterId) {
-        query.recruiterId = req.query.recruiterId;
-      }
-      const cursor = companyCollection.find(query);
-      const result = await cursor.toArray();
-      console.log(result);
-      res.send(result);
-    });
+    app.get(
+      "/api/my/companies",
+      verifyToken,
+      verifyRecruiter,
+      async (req, res) => {
+        const query = {};
+        if (req.query.recruiterId) {
+          query.recruiterId = req.query.recruiterId;
+        }
+        const cursor = companyCollection.find(query);
+        const result = await cursor.toArray();
+        console.log(result);
+        res.send(result);
+      },
+    );
 
     // Add new Company
-    app.post("/api/companies", verifyToken, verifyRecruiter, async (req, res) => {
-      const company = req.body;
-      const newCompany = {
-        ...company,
-        createdAt: new Date(),
-      };
-      const result = await companyCollection.insertOne(newCompany);
-      res.send(result);
-    });
+    app.post(
+      "/api/companies",
+      verifyToken,
+      verifyRecruiter,
+      async (req, res) => {
+        const company = req.body;
+        const newCompany = {
+          ...company,
+          createdAt: new Date(),
+        };
+        const result = await companyCollection.insertOne(newCompany);
+        res.send(result);
+      },
+    );
 
     // update user plan
     app.patch(
